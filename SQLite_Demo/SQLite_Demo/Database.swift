@@ -11,8 +11,6 @@ import SQLite3
 
 class SQLDBHelper{
     
-  
-    let dbPath: String = "myDb.sqlite"
     var db:OpaquePointer?
    
     init()
@@ -25,7 +23,7 @@ class SQLDBHelper{
     func openDatabase() -> OpaquePointer?
       {
           let fileURL = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-              .appendingPathComponent(dbPath)
+              .appendingPathComponent("myDb.sqlite")
         
           var db: OpaquePointer? = nil
         
@@ -87,7 +85,30 @@ class SQLDBHelper{
         sqlite3_finalize(insertSatement)
         
     }
-    
+    func update(id:Int,name:String,age:Int){
+        
+        let insertSatementString = "update person set name='\(name)',age=\(age) where id=\(id);"
+        var insertSatement : OpaquePointer? = nil
+        
+        if sqlite3_prepare_v2(db, insertSatementString, -1, &insertSatement, nil) == SQLITE_OK{
+            
+            sqlite3_bind_int(insertSatement, 1, Int32(id))
+            sqlite3_bind_text(insertSatement, 2, (name as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(insertSatement, 3, Int32(age))
+            
+            if sqlite3_step(insertSatement) == SQLITE_DONE{
+                print("Successfully update row")
+            }else{
+                print("Data not update")
+            }
+            
+        }else{
+            print("update Statement couyld not be corrct")
+        }
+   
+        sqlite3_finalize(insertSatement)
+        
+    }
     func read()->[Person]?{
         let queryStatementString = "SELECT * FROM person;"
         var queryStatement:OpaquePointer? = nil
@@ -95,8 +116,6 @@ class SQLDBHelper{
         if sqlite3_prepare_v2(db,queryStatementString, -1, &queryStatement, nil) == SQLITE_OK{
             var arrPersion = [Person]()
             while sqlite3_step(queryStatement) == SQLITE_ROW{
-                print(queryStatement)
-                
                 let id = sqlite3_column_int(queryStatement, 0)
                 let name = String(describing: String(cString: sqlite3_column_text(queryStatement, 1)))
                 let age = sqlite3_column_int(queryStatement, 2)
